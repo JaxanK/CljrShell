@@ -1,0 +1,27 @@
+/obj
+/bin
+
+#Jax Added
+/.clj-kondo/.cache/
+/.lsp/
+
+
+/lib
+/.env
+/.calva/output-window/
+/.shadow-cljs
+/node_modules
+/log
+/.VSCodeCounter
+render.scad
+/target
+
+#Only exclude these if needed with different environments
+#dev-config.edn
+#test-config.edn
+
+
+#If adding to this list, you need to remove tracked files from git and then readd them 
+# with the two terminal cmds below (periods are important)
+#     git rm -rf --cached .
+#     git add .

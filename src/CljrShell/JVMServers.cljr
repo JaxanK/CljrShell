@@ -1,0 +1,40 @@
+(ns src.CljrShell.JVMServers
+  #_{:clj-kondo/ignore [:unused-referred-var]}
+  (:require [clojure.core.async :as a :refer [<!! >!! <! >!]])
+  (:import (NamedPipeStreamServerThread NamedPipeThread NamedPipeServerMessageProcessor)))
+
+
+(defn SetupServer []
+  (let [msgInterface (proxy [NamedPipeServerMessageProcessor] []
+                       (ProcessMessageAndGetResponse [msg] (pr-str (load-string (str "(in-ns 'src.CljrShell.core)" msg))))
+                       (ProcessError [msg e] (println (str "Error with Message: " msg "... Error is: " (.Message e)))))]
+
+    (def Server_Incoming (new NamedPipeThread msgInterface "CljrShellServerIncoming" 2 true))))
+
+(defn StartIncomingServer []
+  (SetupServer)
+  (.StartServer Server_Incoming))
+
+(defn ShutdownServer []
+  (.StopServer Server_Incoming))
+
+
+(def EventsChannel (a/chan))
+
+(defn CloseEventsChannel []
+  (a/close! EventsChannel))
+
+(defn SetupEventServer []
+  (let [msgInterface (proxy [NamedPipeServerMessageProcessor] []
+                       (ProcessMessageAndGetResponse [_msg] (<!! (a/go (pr-str (<! EventsChannel)))))
+                       (ProcessError [msg e] (println (str "Error with Events Channel... Error is: " (.Message e)))))]
+
+    (def Server_Events (new NamedPipeThread msgInterface "CljrShellServerEvents" 2 true))))
+
+(defn StartEventServer []
+  (SetupEventServer)
+  (.StartServer Server_Events))
+
+(defn ShutdownEventsServer []
+  (.StopServer Server_Events)
+  (CloseEventsChannel))

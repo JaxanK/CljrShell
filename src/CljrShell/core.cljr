@@ -1,0 +1,73 @@
+(ns src.CljrShell.core ;Note if changing this, you will need to change the string in the SetupServer function in JVMServers.cljr
+  (:gen-class :main true)
+  (:require [src.CljrShell.Startup]
+            [src.CljrShell.JVMServers :as TS]
+            [src.CljrShell.version :as ver]
+            )
+  (:import  (System.Windows.Forms Application MessageBox NotifyIcon ContextMenuStrip MouseEventHandler)
+            (System.Threading Thread)
+            (System EventHandler)
+            (System.Drawing Icon)))
+
+(declare StartNotifyIcon StopNotifyIcon)
+
+
+(def EndPromise "Promise var when delivered will end the program" (promise))
+
+(defn StartController "Call to Start the Controller - For both Dev and Production." []
+  (TS/StartIncomingServer)
+  (TS/StartEventServer)
+  (println "JVM Servers Started!")
+  (future (StartNotifyIcon)))
+
+(defn ExitController "Call to gracefully Exit the Controller" []
+  (TS/ShutdownServer)
+  (TS/ShutdownEventsServer)
+  (StopNotifyIcon)
+  (deliver EndPromise :End)
+  )
+
+
+(defn -main [& _args]
+  (println "ProgramLaunchComplete") ;Tied to startup program to trigger it to stop the loading sequence and exit
+  (println "Welcome to the Clojure CLR Shell Program!")
+
+  (StartController)
+
+  ;Will block (wait) until this promise is triggered by ExitController call
+  @EndPromise
+
+  (println "Clojure CLR Shell Shutting Down"))
+
+
+(defn Query []
+  {:CljrConnectionActive? true
+   ; Add status tags or information to this map as desired
+  }
+)
+
+
+
+#_{:clj-kondo/ignore [:unresolved-symbol]}
+(defn StartNotifyIcon "This is the System Tray Icon and Right click menu" []
+
+  (def notifyIcon (new NotifyIcon))
+
+  (def CMS (new ContextMenuStrip))
+  (.Add (. CMS Items) "Exit" nil (gen-delegate EventHandler [sender args] (ExitController)))
+
+  (doto notifyIcon
+    (.set_Text                 (str "Cljr Shell [Version: " (let [v ver/version] (if (string? v) v ""))  "]"))
+    (.set_ContextMenuStrip     CMS)
+    (.add_MouseDoubleClick     (gen-delegate MouseEventHandler [sender args] (MessageBox/Show "This the Clojure CLR Shell Program. It is used for Communicating between .Net and the Java platform. \nTo Exit, you can right click on the Icon and select Exit.")))
+    (.set_Icon                 (new Icon "Icon.ico"))
+    (.set_Visible              true))
+
+  ;; (set! (.Visible notifyIcon) false)
+
+  (Application/Run))
+
+(defn StopNotifyIcon []
+  (Application/Exit))
+
+(println "Core Namespace Loaded!")

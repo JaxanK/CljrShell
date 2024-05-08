@@ -1,0 +1,10 @@
+(ns src.CljrShell.Startup "Namespace for loading assemblies. No state introduced.")
+
+(defn startup []
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (let [basePath "C-Sharp-Libs\\"]
+    (assembly-load-from (str basePath "NamedPipeStreamServerThread.dll"))
+    ;Add assemblies that require loading for use with ClojureCLR
+    ))
+
+(startup)

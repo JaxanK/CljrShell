@@ -1,0 +1,8 @@
+
+{:linters {:inline-def {:level :off}
+           :clojure-lsp/unused-public-var {:level :off}
+           :missing-else-branch {:level :off}
+           :redundant-do {:level :off}
+           :refer-all {:level :off}
+           
+           }}
